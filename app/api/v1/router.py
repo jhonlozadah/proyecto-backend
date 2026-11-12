@@ -1,0 +1,21 @@
+from fastapi import APIRouter
+from app.api.v1.endpoints import auth, carrito, roles, usuarios, categorias, productos, marcas, cupones, blogs, pedidos, admin_pedidos, admin_ventas, admin_reportes, admin_dashboard, consultas, disenos, notificaciones                                         
+                                                                                            
+api_router = APIRouter()                                                                    
+api_router.include_router(auth.router, prefix="/auth", tags=["Autenticación"])              
+api_router.include_router(usuarios.router, prefix="/usuarios", tags=["Usuarios"])           
+api_router.include_router(categorias.router, prefix="/categorias", tags=["categorias"])     
+api_router.include_router(productos.router, prefix="/productos", tags=["productos"])        
+api_router.include_router(marcas.router, prefix="/marcas", tags=["marcas"])                 
+api_router.include_router(roles.router, prefix="/roles", tags=["Roles"])                    
+api_router.include_router(carrito.router, prefix="/carrito", tags=["Carrito"])              
+api_router.include_router(cupones.router, prefix="/cupones", tags=["Cupones"])              
+api_router.include_router(blogs.router, prefix="/blogs", tags=["blogs"])                    
+api_router.include_router(pedidos.router, prefix="/pagos", tags=["Pagos"])                  
+api_router.include_router(admin_pedidos.router, prefix="/admin", tags=["Admin Pedidos"])    
+api_router.include_router(admin_ventas.router, prefix="/admin/ventas", tags=["Admin Ventas"])
+api_router.include_router(admin_reportes.router, prefix="/admin/reportes", tags=["Admin Reportes"])
+api_router.include_router(admin_dashboard.router, prefix="/admin/dashboard", tags=["Admin Dashboard"])
+api_router.include_router(consultas.router, prefix="/consultas", tags=["consultas"])                  
+api_router.include_router(disenos.router, prefix="/disenos", tags=["disenos"])
+api_router.include_router(notificaciones.router, prefix="/notificaciones", tags=["Notificaciones"])                 
