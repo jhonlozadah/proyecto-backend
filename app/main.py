@@ -48,4 +48,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.api_route("/health", methods=["GET", "HEAD"], tags=["Sistema"])
+def health_check():
+    return {"status": "ok"}
+
 app.include_router(api_router, prefix="/api/v1")
