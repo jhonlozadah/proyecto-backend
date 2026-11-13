@@ -48,6 +48,23 @@ async def listar_pedidos_admin(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/pedidos/conteo-procesando")
+def obtener_conteo_pedidos_procesando(
+    usuario_id: str = Depends(verificar_permiso("pedidos_access"))
+):
+    try:
+        res = (
+            supabase_admin.table("pedidos")
+            .select("id", count="exact")
+            .ilike("estado", "procesando")
+            .execute()
+        )
+        total = res.count if res.count is not None else 0
+        return {"procesando": total}
+    except Exception as e:
+        print(f"[ERROR CONTEO PEDIDOS]: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/pedidos/{pedido_id}")
 async def obtener_detalle_pedido_admin(
     pedido_id: str, 
@@ -163,18 +180,3 @@ async def actualizar_estado_pedido(
         raise he
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-@router.get("/conteo-procesando")
-def obtener_conteo_pedidos_procesando(usuario = Depends(obtener_usuario_actual)):
-    try:
-        res = (
-            supabase_admin.table("pedidos")
-            .select("id", count="exact")
-            .ilike("estado", "procesando")
-            .execute()
-        )
-        total = res.count if res.count is not None else 0
-        return {"procesando": total}
-    except Exception as e:
-        print(f"[ERROR CONTEO PEDIDOS]: {e}")
-        return {"procesando": 0}
