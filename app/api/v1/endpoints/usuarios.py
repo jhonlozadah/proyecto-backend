@@ -85,6 +85,45 @@ async def obtener_perfil(
     await redis_client.setex(cache_key, 600, json.dumps(perfil))
     return perfil
 
+@router.get("/pedidos/{pedido_id}/nota-credito")
+def obtener_nota_credito_cliente(
+    pedido_id: str,
+    usuario_id: str = Depends(obtener_usuario_actual)
+):
+    try:
+        res_pedido = supabase_admin.table("pedidos")\
+            .select("id, id_cliente, total, costo_envio, tipo_comprobante, ruc_factura, razon_social_factura, receptor_documento_num, usuarios(nombres, apellidos, tipo_documento, numero_documento)")\
+            .eq("id", pedido_id)\
+            .single()\
+            .execute()
+
+        if not res_pedido.data or str(res_pedido.data["id_cliente"]) != str(usuario_id):
+            raise HTTPException(status_code=404, detail="Pedido no encontrado")
+
+        res_nc = supabase_admin.table("notas_credito")\
+            .select("*")\
+            .eq("id_pedido", pedido_id)\
+            .single()\
+            .execute()
+
+        if not res_nc.data:
+            raise HTTPException(status_code=404, detail="Este pedido no tiene una Nota de Crédito asociada")
+
+        res_detalles = supabase_admin.table("detalle_pedido")\
+            .select("cantidad, precio_unitario, subtotal, productos(nombre, sku)")\
+            .eq("id_pedido", pedido_id)\
+            .execute()
+
+        return {
+            "pedido": res_pedido.data,
+            "nota_credito": res_nc.data,
+            "productos": res_detalles.data or []
+        }
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @router.put("/perfil")
 async def actualizar_perfil(
     datos: UsuarioUpdate, 
