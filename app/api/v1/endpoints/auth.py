@@ -336,7 +336,7 @@ def cambiar_password_recuperacion(datos: RecuperarCambiarRequest):
             detail=f"Error al actualizar la contraseña: {str(e)}"
         )
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000").rstrip("/")
+BACKEND_URL = os.getenv("BACKEND_URL", "https://proyecto-backend-42cf.onrender.com").rstrip("/")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500").rstrip("/")
 
 @router.get("/google")
