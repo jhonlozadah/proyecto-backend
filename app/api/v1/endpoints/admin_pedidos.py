@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, status, BackgroundTasks
 import json
 from pydantic import BaseModel
 from app.core.database import supabase_admin, get_redis
-from app.api.dependencies import verificar_permiso
+from app.api.dependencies import obtener_usuario_actual, verificar_permiso
 from app.services.email_brevo import enviar_correo_estado_pedido
 from app.services.notificaciones_service import notificar_administradores
 from redis.asyncio import Redis
@@ -163,3 +163,18 @@ async def actualizar_estado_pedido(
         raise he
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/conteo-procesando")
+def obtener_conteo_pedidos_procesando(usuario = Depends(obtener_usuario_actual)):
+    try:
+        res = (
+            supabase_admin.table("pedidos")
+            .select("id", count="exact")
+            .ilike("estado", "procesando")
+            .execute()
+        )
+        total = res.count if res.count is not None else 0
+        return {"procesando": total}
+    except Exception as e:
+        print(f"[ERROR CONTEO PEDIDOS]: {e}")
+        return {"procesando": 0}
