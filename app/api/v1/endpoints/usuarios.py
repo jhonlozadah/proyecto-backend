@@ -250,8 +250,8 @@ async def activar_mfa(
                 key="access_token",
                 value=nuevo_token,
                 httponly=True,
-                secure=False, # Cambiar a True si usas HTTPS en producción
-                samesite="lax",
+                secure=True, # Cambiar a True si usas HTTPS en producción
+                samesite="none",
                 path="/",
                 max_age=3600
             )

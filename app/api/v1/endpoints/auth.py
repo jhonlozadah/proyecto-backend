@@ -73,7 +73,7 @@ def login(credentials: LoginRequest, response: Response, request: Request):
         token = auth_response.session.access_token
 
         if not mfa_requerido:
-            response.set_cookie(key="access_token", value=token, httponly=True, secure=False, samesite="lax", path="/", max_age=3600)
+            response.set_cookie(key="access_token", value=token, httponly=True, secure=True, samesite="none", path="/", max_age=3600)
 
         return LoginResponse(
             access_token=token,
@@ -392,8 +392,8 @@ def google_callback(code: str):
             key="access_token",
             value=token,
             httponly=True,
-            secure=False, # Cambiar a True en producción con HTTPS
-            samesite="lax",
+            secure=True, # Cambiar a True en producción con HTTPS
+            samesite="none",
             path="/",
             max_age=3600
         )
@@ -409,8 +409,8 @@ def sincronizar_sesion(body: TokenBody, response: Response):
         key="access_token",
         value=body.token,
         httponly=True,
-        secure=False, 
-        samesite="lax",
+        secure=True, 
+        samesite="none",
         path="/",
         max_age=3600
     )
@@ -431,8 +431,8 @@ async def cerrar_sesion(
         print("[DEBUG AUTH] Token añadido a la lista negra.")
 
     respuesta = JSONResponse(content={"mensaje": "Sesión cerrada exitosamente y token revocado"})
-    respuesta.delete_cookie(key="access_token", path="/", httponly=True, secure=False, samesite="lax")
-    respuesta.delete_cookie(key="refresh_token", path="/", httponly=True, secure=False, samesite="lax")
+    respuesta.delete_cookie(key="access_token", path="/", httponly=True, secure=True, samesite="none")
+    respuesta.delete_cookie(key="refresh_token", path="/", httponly=True, secure=True, samesite="none")
     respuesta.delete_cookie(key="access_token", path="/", httponly=True, secure=True, samesite="none")
 
     return respuesta

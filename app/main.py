@@ -32,7 +32,14 @@ async def lifespan(app: FastAPI):
         print("[SISTEMA] Pool de Redis cerrado y recursos liberados.")
 
 app = FastAPI(title="Edificando", lifespan=lifespan)
-origenes_permitidos = [origen.strip() for origen in settings.CORS_ORIGINS.split(",")]
+
+# Limpia espacios y barras finales (/) automáticamente
+origenes_permitidos = [
+    origen.strip().rstrip("/") 
+    for origen in settings.CORS_ORIGINS.split(",") 
+    if origen.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origenes_permitidos,
