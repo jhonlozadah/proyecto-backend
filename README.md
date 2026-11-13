@@ -90,7 +90,7 @@ edificando-backend/
 │   ├── utils/
 │   │   └── formatters.py            # Helpers de formateo de datos y slugs
 │   └── main.py                      # Punto de entrada de la aplicación FastAPI
-├── .env                             # Variables de entorno (no incluir en Git)
+├── .env                             # Variables de entorno
 ├── .gitignore
 ├── README.md
 └── requeriments.txt                 # Dependencias del proyecto
@@ -102,7 +102,7 @@ edificando-backend/
 
 ### 1. Clonar el repositorio
 ```bash
-git clone https://github.com/tu-usuario/edificando-backend.git
+git clone https://github.com/jhonlozadah/proyecto-backend.git
 cd edificando-backend
 ```
 
