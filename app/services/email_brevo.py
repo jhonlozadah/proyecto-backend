@@ -1,6 +1,9 @@
 import requests
 from app.core.config import settings
 
+LOGO_URL = "https://www.edificando.com.pe/img/logo.png"
+
+
 def enviar_correo_recuperacion(email_destino: str, codigo: str) -> bool:
     url = "https://api.brevo.com/v3/smtp/email"
 
@@ -13,88 +16,96 @@ def enviar_correo_recuperacion(email_destino: str, codigo: str) -> bool:
     html_content = f"""
     <!DOCTYPE html>
     <html lang="es">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                body {{
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    background-color: #f4f6f8;
-                    margin: 0;
-                    padding: 40px 20px;
-                    -webkit-font-smoothing: antialiased;
-                }}
-                .card {{
-                    max-width: 500px;
-                    margin: 0 auto;
-                    background: #ffffff;
-                    border-radius: 12px;
-                    padding: 32px;
-                    border: 1px solid #e2e8f0;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-                    text-align: center;
-                }}
-                .header {{
-                    background-color: #1453a0;
-                    color: #ffffff;
-                    padding: 16px;
-                    border-radius: 8px;
-                    font-weight: 700;
-                    font-size: 22px;
-                    letter-spacing: 0.5px;
-                    margin-bottom: 24px;
-                }}
-                .title {{
-                    color: #0f172a;
-                    margin-top: 0;
-                    margin-bottom: 12px;
-                    font-size: 20px;
-                    font-weight: 600;
-                }}
-                .text {{
-                    color: #334155;
-                    font-size: 15px;
-                    line-height: 1.5;
-                    margin-bottom: 20px;
-                }}
-                .code-box {{
-                    background-color: #f0f5fa;
-                    border: 2px dashed #1453a0;
-                    padding: 18px;
-                    font-size: 32px;
-                    font-weight: 800;
-                    letter-spacing: 10px;
-                    color: #1453a0;
-                    margin: 24px 0;
-                    border-radius: 8px;
-                    display: inline-block;
-                    width: 80%;
-                }}
-                .disclaimer {{
-                    color: #64748b;
-                    font-size: 13px;
-                    line-height: 1.4;
-                    margin-top: 20px;
-                }}
-                .footer {{
-                    font-size: 12px;
-                    color: #94a3b8;
-                    margin-top: 28px;
-                    border-top: 1px solid #f1f5f9;
-                    padding-top: 16px;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="card">
-                <div class="header">Edificando</div>
-                <h2 class="title">Código de Verificación</h2>
-                <p class="text">Has solicitado restablecer tu contraseña. Utiliza el siguiente código para completar la verificación:</p>
-                <div class="code-box">{codigo}</div>
-                <p class="disclaimer">Este código expira en 15 minutos. Si no solicitaste este cambio, puedes ignorar este correo de forma segura.</p>
-                <div class="footer">&copy; Edificando. Todos los derechos reservados.</div>
-            </div>
-        </body>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Código de Verificación - Edificando</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+        <!-- Texto de vista previa oculto -->
+        <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">
+            Tu código de seguridad es {codigo}. Expira en 15 minutos.
+        </div>
+
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f1f5f9; padding: 40px 16px;">
+            <tr>
+                <td align="center">
+                    <!-- Contenedor Principal -->
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 540px; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);">
+                        
+                        <!-- Cabecera Corporativa -->
+                        <tr>
+                            <td align="center" style="background: linear-gradient(135deg, #1453a0 0%, #0d3b75 100%); background-color: #1453a0; padding: 32px 24px; border-bottom: 4px solid #2563eb;">
+                                <img src="{LOGO_URL}" alt="EDIFICANDO" height="42" style="display: block; max-height: 42px; width: auto; border: 0; color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: 2px;">
+                                <p style="margin: 8px 0 0 0; color: #bfdbfe; font-size: 11px; text-transform: uppercase; letter-spacing: 1.8px; font-weight: 600;">
+                                    Seguridad de Cuenta
+                                </p>
+                            </td>
+                        </tr>
+
+                        <!-- Cuerpo del Mensaje -->
+                        <tr>
+                            <td style="padding: 40px 36px 32px 36px; text-align: center;">
+                                <!-- Etiqueta Superior -->
+                                <span style="display: inline-block; background-color: #eff6ff; color: #1453a0; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 999px; letter-spacing: 0.5px; margin-bottom: 16px;">
+                                    RECUPERACIÓN DE CONTRASEÑA
+                                </span>
+
+                                <h1 style="margin: 0 0 12px 0; color: #0f172a; font-size: 24px; font-weight: 700; line-height: 1.3;">
+                                    Código de Verificación
+                                </h1>
+
+                                <p style="margin: 0 0 28px 0; color: #475569; font-size: 15px; line-height: 1.6;">
+                                    Has solicitado restablecer tu contraseña. Ingresa el siguiente código temporal en la pantalla de verificación para continuar:
+                                </p>
+
+                                <!-- Caja de Código OTP -->
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
+                                    <tr>
+                                        <td align="center" style="background-color: #f8fafc; border: 2px dashed #1453a0; border-radius: 12px; padding: 24px 16px;">
+                                            <div style="font-family: 'Courier New', Courier, monospace; font-size: 36px; font-weight: 800; letter-spacing: 12px; color: #1453a0; padding-left: 12px;">
+                                                {codigo}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <!-- Indicador de Expiración -->
+                                <p style="margin: 0 0 28px 0; color: #64748b; font-size: 13px;">
+                                    Este código es de un solo uso y expirará en <strong style="color: #0f172a;">15 minutos</strong>.
+                                </p>
+
+                                <!-- Aviso de Seguridad -->
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                    <tr>
+                                        <td style="background-color: #f8fafc; border-left: 3px solid #94a3b8; border-radius: 6px; padding: 14px 16px; text-align: left;">
+                                            <p style="margin: 0; color: #64748b; font-size: 12.5px; line-height: 1.5;">
+                                                <strong style="color: #334155;">¿No solicitaste este cambio?</strong><br>
+                                                Si no fuiste tú, ignora este mensaje. Tu contraseña actual permanecerá protegida y sin modificaciones.
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <!-- Pie de Página -->
+                        <tr>
+                            <td style="background-color: #f8fafc; padding: 24px 36px; border-top: 1px solid #e2e8f0; text-align: center;">
+                                <p style="margin: 0 0 6px 0; color: #64748b; font-size: 12px;">
+                                    Este es un mensaje automático de seguridad, por favor no respondas a este correo.
+                                </p>
+                                <p style="margin: 0; color: #94a3b8; font-size: 12px; font-weight: 500;">
+                                    &copy; Edificando. Todos los derechos reservados.
+                                </p>
+                            </td>
+                        </tr>
+
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
     </html>
     """
 
@@ -119,6 +130,7 @@ def enviar_correo_recuperacion(email_destino: str, codigo: str) -> bool:
 
     return True
 
+
 def enviar_correo_estado_pedido(email_destino: str, nombre_cliente: str, pedido_id: str, nuevo_estado: str) -> bool:
     url = "https://api.brevo.com/v3/smtp/email"
     headers = {
@@ -139,120 +151,107 @@ def enviar_correo_estado_pedido(email_destino: str, nombre_cliente: str, pedido_
     }
 
     mensaje_cuerpo = mensajes.get(estado_normalizado, f"El estado de tu pedido se ha actualizado a: {nuevo_estado.capitalize()}")
-    color_badge = "#1453a0" 
+    color_badge = "#1453a0"
+    bg_badge = "#eff6ff"
     if estado_normalizado in ["completado", "enviado"]:
         color_badge = "#16a34a"
+        bg_badge = "#f0fdf4"
     elif estado_normalizado in ["cancelado", "fallido"]:
         color_badge = "#dc2626"
+        bg_badge = "#fef2f2"
     elif estado_normalizado == "procesando":
         color_badge = "#ca8a04"
+        bg_badge = "#fefce8"
 
     html_content = f"""
     <!DOCTYPE html>
     <html lang="es">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                body {{
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    background-color: #f4f6f8;
-                    margin: 0;
-                    padding: 40px 20px;
-                    -webkit-font-smoothing: antialiased;
-                }}
-                .card {{
-                    max-width: 550px;
-                    margin: 0 auto;
-                    background: #ffffff;
-                    border-radius: 12px;
-                    padding: 32px;
-                    border: 1px solid #e2e8f0;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-                }}
-                .header {{
-                    background-color: #1453a0;
-                    color: #ffffff;
-                    padding: 20px;
-                    border-radius: 8px;
-                    font-weight: 700;
-                    font-size: 22px;
-                    text-align: center;
-                    letter-spacing: 0.5px;
-                    margin-bottom: 24px;
-                }}
-                .title {{
-                    color: #0f172a;
-                    margin-top: 0;
-                    margin-bottom: 12px;
-                    font-size: 18px;
-                    font-weight: 600;
-                }}
-                .text {{
-                    color: #334155;
-                    font-size: 15px;
-                    line-height: 1.6;
-                    margin-bottom: 24px;
-                }}
-                .status-box {{
-                    background-color: #f8fafc;
-                    border-left: 4px solid {color_badge};
-                    padding: 16px 20px;
-                    border-radius: 4px;
-                    margin-bottom: 24px;
-                }}
-                .status-label {{
-                    font-size: 12px;
-                    text-transform: uppercase;
-                    color: #64748b;
-                    font-weight: bold;
-                    letter-spacing: 1px;
-                    margin-bottom: 4px;
-                }}
-                .status-value {{
-                    font-size: 20px;
-                    font-weight: 700;
-                    color: {color_badge};
-                    margin: 0;
-                }}
-                .footer {{
-                    font-size: 12px;
-                    color: #94a3b8;
-                    margin-top: 32px;
-                    border-top: 1px solid #f1f5f9;
-                    padding-top: 16px;
-                    text-align: center;
-                }}
-                .btn-track {{
-                    display: inline-block;
-                    background-color: #1453a0;
-                    color: #ffffff;
-                    text-decoration: none;
-                    padding: 12px 24px;
-                    border-radius: 6px;
-                    font-weight: 600;
-                    font-size: 14px;
-                    text-align: center;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="card">
-                <div class="header">EDIFICANDO</div>
-                <h2 class="title">Hola, {nombre_cliente}</h2>
-                <p class="text">Te escribimos para informarte que hay una actualización en tu pedido <strong>#PED-{id_corto}</strong>.</p>
-                <div class="status-box">
-                    <div class="status-label">Nuevo Estado del Pedido</div>
-                    <p class="status-value">{nuevo_estado.upper()}</p>
-                </div>
-                <p class="text">{mensaje_cuerpo}</p>
-                <p class="text">Puedes revisar el detalle completo de tus productos y el seguimiento ingresando a tu cuenta en nuestra tienda.</p>
-                <div class="footer">
-                    Este es un correo automático, por favor no respondas a esta dirección.<br>
-                    &copy; Edificando. Todos los derechos reservados.
-                </div>
-            </div>
-        </body>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Actualización de Pedido #PED-{id_corto} - Edificando</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+        <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">
+            Tu pedido #PED-{id_corto} ahora se encuentra en estado: {nuevo_estado.upper()}.
+        </div>
+
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f1f5f9; padding: 40px 16px;">
+            <tr>
+                <td align="center">
+                    <!-- Contenedor Principal -->
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 580px; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);">
+                        
+                        <!-- Cabecera Corporativa -->
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #1453a0 0%, #0d3b75 100%); background-color: #1453a0; padding: 28px 36px; border-bottom: 4px solid #2563eb;">
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                    <tr>
+                                        <td align="left" valign="middle">
+                                            <img src="{LOGO_URL}" alt="EDIFICANDO" height="38" style="display: block; max-height: 38px; width: auto; border: 0; color: #ffffff; font-size: 22px; font-weight: 800; letter-spacing: 1.5px;">
+                                        </td>
+                                        <td align="right" valign="middle">
+                                            <span style="display: inline-block; background-color: rgba(255, 255, 255, 0.15); color: #ffffff; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 6px; letter-spacing: 0.8px;">
+                                                #PED-{id_corto}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <!-- Cuerpo del Mensaje -->
+                        <tr>
+                            <td style="padding: 36px 36px 32px 36px; text-align: left;">
+                                <h1 style="margin: 0 0 12px 0; color: #0f172a; font-size: 22px; font-weight: 700;">
+                                    Hola, {nombre_cliente}
+                                </h1>
+
+                                <p style="margin: 0 0 24px 0; color: #475569; font-size: 15px; line-height: 1.6;">
+                                    Te escribimos para informarte que hay una actualización en el estado de tu orden <strong style="color: #0f172a;">#PED-{id_corto}</strong>:
+                                </p>
+
+                                <!-- Tarjeta de Estado -->
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
+                                    <tr>
+                                        <td style="background-color: {bg_badge}; border: 1px solid #e2e8f0; border-left: 5px solid {color_badge}; border-radius: 10px; padding: 20px 24px;">
+                                            <div style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 1.2px; margin-bottom: 6px;">
+                                                Nuevo Estado del Pedido
+                                            </div>
+                                            <div style="font-size: 22px; font-weight: 800; color: {color_badge}; letter-spacing: 0.5px;">
+                                                {nuevo_estado.upper()}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <p style="margin: 0 0 20px 0; color: #1e293b; font-size: 15px; font-weight: 500; line-height: 1.6;">
+                                    {mensaje_cuerpo}
+                                </p>
+
+                                <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;">
+                                    Puedes revisar el detalle completo de tus productos y el historial de seguimiento ingresando a tu cuenta en nuestra tienda virtual.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <!-- Pie de Página -->
+                        <tr>
+                            <td style="background-color: #f8fafc; padding: 24px 36px; border-top: 1px solid #e2e8f0; text-align: center;">
+                                <p style="margin: 0 0 6px 0; color: #64748b; font-size: 12px;">
+                                    Este es un correo automático, por favor no respondas a esta dirección.
+                                </p>
+                                <p style="margin: 0; color: #94a3b8; font-size: 12px; font-weight: 500;">
+                                    &copy; Edificando. Todos los derechos reservados.
+                                </p>
+                            </td>
+                        </tr>
+
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
     </html>
     """
 
@@ -279,6 +278,7 @@ def enviar_correo_estado_pedido(email_destino: str, nombre_cliente: str, pedido_
 
     return True
 
+
 def enviar_correo_respuesta_consulta(email_destino: str, nombre_cliente: str, asunto_original: str, mensaje_respuesta: str) -> bool:
     url = "https://api.brevo.com/v3/smtp/email"
     headers = {
@@ -292,85 +292,93 @@ def enviar_correo_respuesta_consulta(email_destino: str, nombre_cliente: str, as
     html_content = f"""
     <!DOCTYPE html>
     <html lang="es">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                body {{
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    background-color: #f4f6f8;
-                    margin: 0;
-                    padding: 40px 20px;
-                    -webkit-font-smoothing: antialiased;
-                }}
-                .card {{
-                    max-width: 550px;
-                    margin: 0 auto;
-                    background: #ffffff;
-                    border-radius: 12px;
-                    padding: 32px;
-                    border: 1px solid #e2e8f0;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-                }}
-                .header {{
-                    background-color: #1453a0;
-                    color: #ffffff;
-                    padding: 20px;
-                    border-radius: 8px;
-                    font-weight: 700;
-                    font-size: 22px;
-                    text-align: center;
-                    letter-spacing: 0.5px;
-                    margin-bottom: 24px;
-                }}
-                .title {{
-                    color: #0f172a;
-                    margin-top: 0;
-                    margin-bottom: 12px;
-                    font-size: 18px;
-                    font-weight: 600;
-                }}
-                .text {{
-                    color: #334155;
-                    font-size: 15px;
-                    line-height: 1.6;
-                    margin-bottom: 24px;
-                }}
-                .reply-box {{
-                    background-color: #f0f5fa;
-                    border-left: 4px solid #1453a0;
-                    padding: 20px;
-                    border-radius: 4px;
-                    margin-bottom: 24px;
-                    color: #1e293b;
-                    font-size: 15px;
-                    line-height: 1.6;
-                    white-space: pre-wrap;
-                }}
-                .footer {{
-                    font-size: 12px;
-                    color: #94a3b8;
-                    margin-top: 32px;
-                    border-top: 1px solid #f1f5f9;
-                    padding-top: 16px;
-                    text-align: center;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="card">
-                <div class="header">EDIFICANDO</div>
-                <h2 class="title">Hola, {nombre_cliente}</h2>
-                <p class="text">En respuesta a <strong>{asunto_display}</strong>, nuestro equipo se ha comunicado contigo:</p>
-                
-                <div class="reply-box">{mensaje_respuesta}</div>
-                
-                <p class="text">Si tienes alguna otra duda o necesitas mayor información, puedes responder directamente a este correo o contactarnos por WhatsApp.</p>
-                <div class="footer">
-                    &copy; Edificando. Todos los derechos reservados.
-                </div>
-            </div>
-        </body>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Respuesta a tu consulta - Edificando</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+        <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">
+            Nuestro equipo de atención al cliente ha respondido a: {asunto_display}
+        </div>
+
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f1f5f9; padding: 40px 16px;">
+            <tr>
+                <td align="center">
+                    <!-- Contenedor Principal -->
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 580px; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);">
+                        
+                        <!-- Cabecera Corporativa -->
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #1453a0 0%, #0d3b75 100%); background-color: #1453a0; padding: 28px 36px; border-bottom: 4px solid #2563eb;">
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                    <tr>
+                                        <td align="left" valign="middle">
+                                            <img src="{LOGO_URL}" alt="EDIFICANDO" height="38" style="display: block; max-height: 38px; width: auto; border: 0; color: #ffffff; font-size: 22px; font-weight: 800; letter-spacing: 1.5px;">
+                                        </td>
+                                        <td align="right" valign="middle">
+                                            <span style="display: inline-block; background-color: rgba(255, 255, 255, 0.15); color: #ffffff; font-size: 11px; font-weight: 700; padding: 6px 12px; border-radius: 999px; letter-spacing: 1px; text-transform: uppercase;">
+                                                Atención al Cliente
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <!-- Cuerpo del Mensaje -->
+                        <tr>
+                            <td style="padding: 36px 36px 32px 36px; text-align: left;">
+                                <h1 style="margin: 0 0 12px 0; color: #0f172a; font-size: 22px; font-weight: 700;">
+                                    Hola, {nombre_cliente}
+                                </h1>
+
+                                <p style="margin: 0 0 22px 0; color: #475569; font-size: 15px; line-height: 1.6;">
+                                    En referencia a <strong style="color: #1453a0;">{asunto_display}</strong>, nuestro equipo te brinda la siguiente respuesta:
+                                </p>
+
+                                <!-- Caja de Respuesta del Asesor -->
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
+                                    <tr>
+                                        <td style="background-color: #f8fafc; border: 1px solid #dbeafe; border-left: 5px solid #1453a0; border-radius: 10px; padding: 22px 24px;">
+                                            <div style="font-size: 11px; text-transform: uppercase; color: #1453a0; font-weight: 700; letter-spacing: 1px; margin-bottom: 10px;">
+                                                Mensaje de Soporte &bull; Edificando
+                                            </div>
+                                            <div style="color: #1e293b; font-size: 15px; line-height: 1.65; white-space: pre-wrap;">{mensaje_respuesta}</div>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <!-- Nota de Contacto -->
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                    <tr>
+                                        <td style="background-color: #eff6ff; border-radius: 8px; padding: 14px 18px;">
+                                            <p style="margin: 0; color: #1e3a8a; font-size: 13.5px; line-height: 1.5;">
+                                                Si tienes alguna otra consulta o requieres asesoría técnica adicional, puedes responder directamente a este correo o escribirnos por WhatsApp.
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <!-- Pie de Página -->
+                        <tr>
+                            <td style="background-color: #f8fafc; padding: 24px 36px; border-top: 1px solid #e2e8f0; text-align: center;">
+                                <p style="margin: 0 0 6px 0; color: #64748b; font-size: 12px;">
+                                    Gracias por comunicarte con nosotros.
+                                </p>
+                                <p style="margin: 0; color: #94a3b8; font-size: 12px; font-weight: 500;">
+                                    &copy; Edificando. Todos los derechos reservados.
+                                </p>
+                            </td>
+                        </tr>
+
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
     </html>
     """
 
