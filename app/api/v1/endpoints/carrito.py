@@ -38,18 +38,67 @@ def agregar_al_carrito(datos: dict, usuario = Depends(obtener_usuario_actual)):
     uid = usuario.get("id") if isinstance(usuario, dict) else getattr(usuario, "id", str(usuario))
     id_prod = datos.get("id_producto")
     cantidad_agregada = int(datos.get("cantidad", 1))
+
+    if cantidad_agregada < 1:
+        raise HTTPException(status_code=400, detail="La cantidad debe ser al menos 1.")
+
+    prod_res = supabase.table("productos").select("stock, nombre").eq("id", id_prod).execute()
+    if not prod_res.data:
+        raise HTTPException(status_code=404, detail="El producto no existe.")
+
+    stock_disponible = int(prod_res.data[0].get("stock") or 0)
+    if stock_disponible <= 0:
+        raise HTTPException(status_code=400, detail="Este producto se encuentra agotado.")
+
     existe = supabase.table("carrito").select("id, cantidad").eq("id_usuario", uid).eq("id_producto", id_prod).execute()
+    cantidad_actual = int(existe.data[0]["cantidad"]) if existe.data else 0
+    nueva_cant = cantidad_actual + cantidad_agregada
+
+    if nueva_cant > stock_disponible:
+        if cantidad_actual >= stock_disponible:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Ya tienes el máximo disponible ({stock_disponible} und.) en tu carrito."
+            )
+        raise HTTPException(
+            status_code=400,
+            detail=f"Stock insuficiente. Solo quedan {stock_disponible} unidades disponibles."
+        )
+
     if existe.data:
-        nueva_cant = existe.data[0]["cantidad"] + cantidad_agregada
         supabase.table("carrito").update({"cantidad": nueva_cant}).eq("id", existe.data[0]["id"]).execute()
     else:
         supabase.table("carrito").insert({"id_usuario": uid, "id_producto": id_prod, "cantidad": cantidad_agregada}).execute()
+
     return {"mensaje": "Producto agregado"}
 
 @router.put("/actualizar", dependencies=[Depends(rate_limiter(max_requests=5, window_seconds=10))])
 def actualizar_cantidad(datos: dict, usuario = Depends(obtener_usuario_actual)):
     uid = usuario.get("id") if isinstance(usuario, dict) else getattr(usuario, "id", str(usuario))
-    supabase.table("carrito").update({"cantidad": int(datos.get("cantidad"))}).eq("id_usuario", uid).eq("id_producto", datos.get("id_producto")).execute()
+    id_prod = datos.get("id_producto")
+    nueva_cantidad = int(datos.get("cantidad", 1))
+
+    if nueva_cantidad < 1:
+        raise HTTPException(status_code=400, detail="La cantidad mínima permitida es 1.")
+
+    # 1. Consultar el stock real en la base de datos
+    prod_res = supabase.table("productos").select("stock").eq("id", id_prod).execute()
+    if not prod_res.data:
+        raise HTTPException(status_code=404, detail="El producto no existe.")
+
+    stock_disponible = int(prod_res.data[0].get("stock") or 0)
+    if stock_disponible <= 0:
+        raise HTTPException(status_code=400, detail="Este producto se encuentra agotado.")
+
+    # 2. Bloquear si la nueva cantidad supera el stock disponible
+    if nueva_cantidad > stock_disponible:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Stock insuficiente. Solo quedan {stock_disponible} unidades disponibles."
+        )
+
+    # 3. Actualizar cantidad en el carrito
+    supabase.table("carrito").update({"cantidad": nueva_cantidad}).eq("id_usuario", uid).eq("id_producto", id_prod).execute()
     return {"mensaje": "Cantidad actualizada"}
 
 @router.delete("/{id_producto}", dependencies=[Depends(rate_limiter(max_requests=5, window_seconds=10))])
