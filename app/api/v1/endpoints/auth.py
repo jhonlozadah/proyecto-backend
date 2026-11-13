@@ -1,3 +1,4 @@
+import os
 import random
 import string
 import math
@@ -335,13 +336,16 @@ def cambiar_password_recuperacion(datos: RecuperarCambiarRequest):
             detail=f"Error al actualizar la contraseña: {str(e)}"
         )
 
+BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000").rstrip("/")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500").rstrip("/")
+
 @router.get("/google")
 def login_con_google():
     try:
         res = supabase.auth.sign_in_with_oauth({
             "provider": "google",
             "options": {
-                "redirect_to": "http://127.0.0.1:8000/api/v1/auth/callback" 
+                "redirect_to": f"{BACKEND_URL}/api/v1/auth/callback"
             }
         })
         return {"url": res.url}
@@ -385,14 +389,16 @@ def google_callback(code: str):
                 print(f"[ERROR NOTIFICACIÓN] No se pudo alertar el registro por Google: {e}")
         else:
             mfa_requerido = usuario_db.data[0].get("mfa_activo", False)
+            
         pagina_destino = "main/verificacion.html" if mfa_requerido else "main/perfil-de-usuario.html"
-        url_frontend = f"http://127.0.0.1:5500/{pagina_destino}?token={token}"
+        url_frontend = f"{FRONTEND_URL}/{pagina_destino}?token={token}"
+        
         respuesta = RedirectResponse(url=url_frontend, status_code=302)
         respuesta.set_cookie(
             key="access_token",
             value=token,
             httponly=True,
-            secure=True, # Cambiar a True en producción con HTTPS
+            secure=True,
             samesite="none",
             path="/",
             max_age=3600
@@ -402,7 +408,7 @@ def google_callback(code: str):
     except Exception as e:
         print(f"[ERROR CALLBACK]: {str(e)}")
         raise HTTPException(status_code=400, detail="Error en Auth Google")
-
+    
 @router.post("/sincronizar-sesion")
 def sincronizar_sesion(body: TokenBody, response: Response):
     response.set_cookie(
