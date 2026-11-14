@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from app.schemas.pedido_schema import CrearPedidoRequest
 from app.core.database import supabase_admin
 from app.api.dependencies import verificar_permiso, obtener_usuario_actual
@@ -16,7 +16,11 @@ def crear_preferencia_endpoint(datos: CrearPedidoRequest, request: Request):
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/pedidos/{pedido_id}")
-def obtener_detalle_pedido(pedido_id: str, request: Request):
+def obtener_detalle_pedido(
+    pedido_id: str,
+    request: Request,
+    usuario_id: str = Depends(obtener_usuario_actual)
+):
     res_pedido = supabase_admin.table("pedidos")\
         .select("*, usuarios(nombres, apellidos, correo, telefono, tipo_documento, numero_documento, departamento, provincia, distrito, direccion)")\
         .eq("id", pedido_id)\
@@ -27,6 +31,10 @@ def obtener_detalle_pedido(pedido_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
 
     pedido = res_pedido.data
+
+    if str(pedido.get("id_cliente")) != str(usuario_id):
+        raise HTTPException(status_code=403, detail="No tienes permiso para acceder a este pedido")
+
     res_venta = supabase_admin.table("ventas")\
         .select("metodo_pago")\
         .eq("id_pedido", pedido_id)\
