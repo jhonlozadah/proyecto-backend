@@ -1,28 +1,52 @@
+import os
 import mercadopago
 from app.core.config import settings
 
 sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
 
 def crear_preferencia_mp(pedido_id: str, items_mp: list, cliente: dict, costo_envio: float, metodo_pago: str):
-    email_comprador = "test_user_7104209745891278445@testuser.com"
+    email_comprador = (cliente.get("correo") or "").strip()
+    if not email_comprador:
+        raise ValueError("El correo electrónico del comprador es obligatorio para procesar el pago.")
+
+    frontend_url = os.getenv(
+        "FRONTEND_URL",
+        "https://jaye-hypesthesic-dextrorsely.ngrok-free.dev"
+    ).rstrip("/")
+
     URL_EDGE_FUNCTION = "https://gzcbcnkodzadxkkpsyrr.supabase.co/functions/v1/dynamic-handler"
+
+    payer_data = {
+        "name": cliente.get("nombres", "Cliente"),
+        "surname": cliente.get("apellidos", "Edificando"),
+        "email": email_comprador,
+    }
+
+    telefono = "".join(filter(str.isdigit, str(cliente.get("telefono") or "")))
+    if telefono:
+        payer_data["phone"] = {
+            "area_code": "51",
+            "number": telefono
+        }
+
+    num_doc = (cliente.get("numero_documento") or "").strip()
+    tipo_doc = (cliente.get("tipo_documento") or "DNI").upper()
+    if num_doc:
+        payer_data["identification"] = {
+            "type": tipo_doc if tipo_doc in ["DNI", "CE", "RUC"] else "Otro",
+            "number": num_doc
+        }
+
     preference_data = {
         "items": items_mp,
-        "payer": {
-            "name": cliente.get("nombres", "Cliente"),
-            "surname": cliente.get("apellidos", "Edificando"),
-            "email": email_comprador
-        },
-        
+        "payer": payer_data,
         "back_urls": {
-            "success": "https://127.0.0.1:5500/main/index.html?estado=exito",
-            "failure": "https://127.0.0.1:5500/main/index.html?estado=fallo",
-            "pending": "https://127.0.0.1:5500/main/index.html?estado=pendiente"
+            "success": f"{frontend_url}/main/index.html?estado=exito",
+            "failure": f"{frontend_url}/main/index.html?estado=fallo",
+            "pending": f"{frontend_url}/main/index.html?estado=pendiente"
         },
-
         "auto_return": "approved",
         "notification_url": URL_EDGE_FUNCTION,
-        "auto_return": "approved",
         "external_reference": str(pedido_id),
         "statement_descriptor": "EDIFICANDO"
     }
@@ -44,4 +68,8 @@ def crear_preferencia_mp(pedido_id: str, items_mp: list, cliente: dict, costo_en
         raise ValueError(f"Error Mercado Pago: {resultado['response']}")
 
     res = resultado["response"]
-    return res.get("sandbox_init_point") or res.get("init_point")
+    init_point = res.get("init_point")
+    if not init_point:
+        raise ValueError("Mercado Pago no devolvió una URL de pago de producción válida.")
+
+    return init_point
