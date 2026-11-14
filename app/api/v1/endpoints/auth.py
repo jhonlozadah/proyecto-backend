@@ -337,7 +337,7 @@ def cambiar_password_recuperacion(datos: RecuperarCambiarRequest):
         )
 
 BACKEND_URL = os.getenv("BACKEND_URL", "https://proyecto-backend-42cf.onrender.com").rstrip("/")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500").rstrip("/")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://jaye-hypesthesic-dextrorsely.ngrok-free.dev").rstrip("/")
 
 @router.get("/google")
 def login_con_google():
