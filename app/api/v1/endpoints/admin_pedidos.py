@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, status, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Depends, status, BackgroundTasks, UploadFile, File
 from typing import Optional
 import json
 from pydantic import BaseModel
@@ -7,6 +7,8 @@ from app.api.dependencies import obtener_usuario_actual, verificar_permiso
 from app.services.email_brevo import enviar_correo_estado_pedido
 from app.services.notificaciones_service import notificar_administradores
 from redis.asyncio import Redis
+from datetime import datetime, timezone
+import uuid
 
 router = APIRouter()
 
@@ -273,3 +275,67 @@ async def actualizar_estado_pedido(
         raise he
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/pedidos/{pedido_id}/comprobante")
+async def subir_comprobante_pedido(
+    pedido_id: str,
+    archivo: UploadFile = File(...),
+    usuario_id: str = Depends(verificar_permiso("pedidos_access")),
+    redis_client: Redis = Depends(get_redis)
+):
+    try:
+        res_pedido = supabase_admin.table("pedidos")\
+            .select("id, tipo_comprobante, comprobante_url")\
+            .eq("id", pedido_id)\
+            .single()\
+            .execute()
+
+        if not res_pedido.data:
+            raise HTTPException(status_code=404, detail="Pedido no encontrado")
+
+        tipos_permitidos = ["application/pdf", "image/jpeg", "image/png", "image/webp"]
+        if archivo.content_type not in tipos_permitidos:
+            raise HTTPException(
+                status_code=400,
+                detail="Formato no permitido. Solo se aceptan archivos PDF, JPG, PNG o WEBP."
+            )
+
+        contenido = await archivo.read()
+        if len(contenido) > 5 * 1024 * 1024: 
+            raise HTTPException(status_code=400, detail="El archivo supera el límite máximo de 5 MB.")
+
+        extension = archivo.filename.split(".")[-1].lower() if "." in archivo.filename else "pdf"
+        tipo_doc = (res_pedido.data.get("tipo_comprobante") or "boleta").upper()
+        pedido_corto = pedido_id.split("-")[0].upper()
+        nombre_limpio = f"{tipo_doc}_PED-{pedido_corto}_{uuid.uuid4().hex[:6]}.{extension}"
+        ruta_storage = f"pedidos/{pedido_id}/{nombre_limpio}"
+
+        supabase_admin.storage.from_("comprobantes").upload(
+            path=ruta_storage,
+            file=contenido,
+            file_options={"content-type": archivo.content_type, "upsert": "true"}
+        )
+
+        url_publica = supabase_admin.storage.from_("comprobantes").get_public_url(ruta_storage)
+        ahora = datetime.now(timezone.utc).isoformat()
+
+        supabase_admin.table("pedidos").update({
+            "comprobante_url": url_publica,
+            "comprobante_nombre": archivo.filename,
+            "comprobante_fecha": ahora
+        }).eq("id", pedido_id).execute()
+
+        await redis_client.delete(f"cache:admin:pedido_detalle:{pedido_id}")
+
+        return {
+            "message": "Comprobante subido y vinculado correctamente.",
+            "comprobante_url": url_publica,
+            "comprobante_nombre": archivo.filename,
+            "comprobante_fecha": ahora
+        }
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"[ERROR SUBIR COMPROBANTE]: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al subir comprobante: {str(e)}")
