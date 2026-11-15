@@ -11,7 +11,7 @@ def crear_preferencia_mp(pedido_id: str, items_mp: list, cliente: dict, costo_en
 
     frontend_url = os.getenv(
         "FRONTEND_URL",
-        "https://jaye-hypesthesic-dextrorsely.ngrok-free.dev"
+        "https://6af9ed3ac76d0e33088b3980--zingy-cassata-3e8cab.netlify.app"
     ).rstrip("/")
 
     URL_EDGE_FUNCTION = "https://gzcbcnkodzadxkkpsyrr.supabase.co/functions/v1/dynamic-handler"

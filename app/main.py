@@ -33,7 +33,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Edificando", lifespan=lifespan)
 
-# Limpia espacios y barras finales (/) automáticamente
 origenes_permitidos = [
     origen.strip().rstrip("/") 
     for origen in settings.CORS_ORIGINS.split(",") 

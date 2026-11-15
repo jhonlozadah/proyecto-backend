@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     MERCADOPAGO_ACCESS_TOKEN: str
     JWT_SECRET_KEY: str
     ENVIRONMENT: str = "development"
-    FRONTEND_URL: str = "https://jaye-hypesthesic-dextrorsely.ngrok-free.dev"
-    CORS_ORIGINS: str = "https://jaye-hypesthesic-dextrorsely.ngrok-free.dev"
+    FRONTEND_URL: str = "https://6af9ed3ac76d0e33088b3980--zingy-cassata-3e8cab.netlify.app/"
+    CORS_ORIGINS: str = "https://6af9ed3ac76d0e33088b3980--zingy-cassata-3e8cab.netlify.app"
     REDIS_URL: str = "redis://localhost:6379/0"
 
     class Config:
