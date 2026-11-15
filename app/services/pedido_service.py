@@ -11,9 +11,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
-def procesar_nueva_orden(datos: CrearPedidoRequest, token: str = None):
-    user_id = None
-    if token:
+def procesar_nueva_orden(datos: CrearPedidoRequest, token: str = None, user_id: str = None):
+    if not user_id and token:
         try:
             user_response = supabase.auth.get_user(token)
             if user_response and user_response.user:
@@ -33,7 +32,7 @@ def procesar_nueva_orden(datos: CrearPedidoRequest, token: str = None):
         "direccion": datos.envio.direccion,
         "referencia": datos.envio.referencia
     }
-    
+
     datos_actualizar_usuario = {k: v for k, v in datos_actualizar_usuario.items() if v}
     correo_limpio = datos.cliente.correo.lower().strip()
 
@@ -43,22 +42,22 @@ def procesar_nueva_orden(datos: CrearPedidoRequest, token: str = None):
             user_id = res_user.data[0]["id"]
             if getattr(datos.cliente, "crear_cuenta", False):
                 raise HTTPException(
-                    status_code=400, 
+                    status_code=400,
                     detail="Este correo ya está registrado. Por favor, inicia sesión para comprar, o desmarca la opción de 'Crear cuenta' para comprar como invitado."
                 )
-            
+
             if datos_actualizar_usuario:
                 supabase_admin.table("usuarios").update(datos_actualizar_usuario).eq("id", user_id).execute()
         else:
             rol_res = supabase_admin.table("roles").select("id").eq("nombre", "cliente").execute()
             id_rol = rol_res.data[0]["id"] if rol_res.data else None
-            
+
             nuevo_user = {
                 "correo": correo_limpio,
                 "id_rol": id_rol,
                 **datos_actualizar_usuario
             }
-            
+
             if getattr(datos.cliente, "crear_cuenta", False) and getattr(datos.cliente, "contrasena", None):
                 try:
                     auth_response = supabase_admin.auth.admin.create_user({
@@ -66,15 +65,15 @@ def procesar_nueva_orden(datos: CrearPedidoRequest, token: str = None):
                         "password": datos.cliente.contrasena,
                         "email_confirm": True
                     })
-                    
+
                     nuevo_user["id"] = auth_response.user.id
                     nuevo_user["contrasena"] = get_password_hash(datos.cliente.contrasena)
-                except Exception as e:
+                except Exception:
                     raise HTTPException(
-                        status_code=400, 
+                        status_code=400,
                         detail="Hubo un problema al registrar tu cuenta en el sistema de seguridad. Intenta comprar como invitado."
                     )
-                
+
             insert_user = supabase_admin.table("usuarios").insert(nuevo_user).execute()
             user_id = insert_user.data[0]["id"]
     else:
@@ -83,18 +82,23 @@ def procesar_nueva_orden(datos: CrearPedidoRequest, token: str = None):
 
     subtotal_real = 0.0
     detalles_pedido = []
+    meta_productos = {}
+
     for item in datos.items:
-        prod_res = supabase_admin.table("productos").select("nombre, precio_normal, precio_oferta, stock").eq("id", item.id_producto).single().execute()
+        prod_res = supabase_admin.table("productos").select(
+            "id, sku, nombre, descripcion_corta, precio_normal, precio_oferta, stock"
+        ).eq("id", item.id_producto).single().execute()
+
         if not prod_res.data:
             raise ValueError(f"El producto con ID {item.id_producto} no existe.")
 
         prod = prod_res.data
         if prod["stock"] < item.cantidad:
             raise ValueError(f"Stock insuficiente para {prod['nombre']}.")
-        
+
         nuevo_stock = prod["stock"] - item.cantidad
         supabase_admin.table("productos").update({"stock": nuevo_stock}).eq("id", item.id_producto).execute()
-        
+
         try:
             umbral_minimo = 5
             if nuevo_stock == 0:
@@ -109,7 +113,7 @@ def procesar_nueva_orden(datos: CrearPedidoRequest, token: str = None):
                     tipo="stock",
                     titulo="Alerta de Stock Bajo",
                     mensaje=f"El producto '{prod['nombre']}' tiene ahora {nuevo_stock} unidades disponibles.",
-                    enlace="productos.html" 
+                    enlace="productos.html"
                 )
         except Exception as e:
             print(f"[ERROR NOTIFICACIÓN STOCK] {e}")
@@ -118,6 +122,13 @@ def procesar_nueva_orden(datos: CrearPedidoRequest, token: str = None):
         precio = float(precio_base)
         subtotal_item = precio * item.cantidad
         subtotal_real += subtotal_item
+
+        meta_productos[str(item.id_producto)] = {
+            "id": str(prod.get("sku") or prod["id"]),
+            "nombre": prod["nombre"],
+            "descripcion_corta": prod.get("descripcion_corta") or f"Material de construcción - {prod['nombre']}"
+        }
+
         detalles_pedido.append({
             "id_producto": item.id_producto,
             "nombre": prod["nombre"],
@@ -145,10 +156,14 @@ def procesar_nueva_orden(datos: CrearPedidoRequest, token: str = None):
 
     for d in detalles_pedido:
         precio_con_descuento = d["precio_unitario"] * factor_descuento
+        info_prod = meta_productos[str(d["id_producto"])]
         items_mp.append({
-            "title": d["nombre"],
+            "id": info_prod["id"],
+            "title": info_prod["nombre"][:250],
+            "description": info_prod["descripcion_corta"][:250],
+            "category_id": "construction",
             "quantity": d["cantidad"],
-            "unit_price": round(precio_con_descuento, 2), 
+            "unit_price": round(precio_con_descuento, 2),
             "currency_id": "PEN"
         })
         del d["nombre"]
@@ -180,7 +195,7 @@ def procesar_nueva_orden(datos: CrearPedidoRequest, token: str = None):
     for d in detalles_pedido:
         d["id_pedido"] = id_pedido
     supabase_admin.table("detalle_pedido").insert(detalles_pedido).execute()
-    
+
     try:
         notificar_administradores(
             tipo="pedido",
@@ -190,8 +205,30 @@ def procesar_nueva_orden(datos: CrearPedidoRequest, token: str = None):
         )
     except Exception as e:
         print(f"[ERROR NOTIFICACIÓN PEDIDO] {e}")
-    
+
+    # Combinar datos del checkout con el perfil completo en public.usuarios (para garantizar DNI y dirección)
     cliente_dict = datos.cliente.model_dump()
+    perfil_db = supabase_admin.table("usuarios").select(
+        "nombres, apellidos, correo, telefono, tipo_documento, numero_documento, direccion"
+    ).eq("id", user_id).single().execute()
+
+    if perfil_db.data:
+        for campo, valor in perfil_db.data.items():
+            if not cliente_dict.get(campo) and valor:
+                cliente_dict[campo] = valor
+
+    # Respaldo adicional si el documento vino en receptor o factura
+    if not cliente_dict.get("numero_documento"):
+        if datos.envio.receptor_documento_num:
+            cliente_dict["numero_documento"] = datos.envio.receptor_documento_num
+            cliente_dict["tipo_documento"] = datos.envio.receptor_documento_tipo or "DNI"
+        elif datos.cliente.ruc_factura:
+            cliente_dict["numero_documento"] = datos.cliente.ruc_factura
+            cliente_dict["tipo_documento"] = "RUC"
+
+    if not cliente_dict.get("direccion") and datos.envio.direccion:
+        cliente_dict["direccion"] = datos.envio.direccion
+
     link_pago = crear_preferencia_mp(
         pedido_id=id_pedido,
         items_mp=items_mp,

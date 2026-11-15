@@ -7,14 +7,23 @@ from app.services.pedido_service import procesar_nueva_orden
 router = APIRouter()
 
 @router.post("/crear-preferencia")
-def crear_preferencia_endpoint(datos: CrearPedidoRequest, request: Request):
+def crear_preferencia_endpoint(
+    datos: CrearPedidoRequest,
+    request: Request,
+    usuario_id: str = Depends(obtener_usuario_actual)
+):
     token = request.cookies.get("access_token")
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ", 1)[1].strip()
+
     try:
-        link_pago = procesar_nueva_orden(datos=datos, token=token)
+        link_pago = procesar_nueva_orden(datos=datos, token=token, user_id=usuario_id)
         return {"init_point": link_pago}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
+    
 @router.get("/pedidos/{pedido_id}")
 def obtener_detalle_pedido(
     pedido_id: str,
