@@ -289,7 +289,7 @@ async def activar_mfa(
                 key="access_token",
                 value=nuevo_token,
                 httponly=True,
-                secure=True, # Cambiar a True si usas HTTPS en producción
+                secure=True,
                 samesite="none",
                 path="/",
                 max_age=3600
@@ -363,47 +363,57 @@ async def desactivar_mfa(
 @router.get("/pedidos")
 def obtener_pedidos_recientes(usuario_id: str = Depends(obtener_usuario_actual)):
     try:
-        respuesta = supabase.table("pedidos") \
-            .select("id, total, estado, fecha_hora_pedido") \
+        respuesta = supabase_admin.table("pedidos") \
+            .select("id, total, estado, fecha_hora_pedido, detalle_pedido(cantidad)") \
             .eq("id_cliente", usuario_id) \
             .order("fecha_hora_pedido", desc=True) \
             .limit(5) \
             .execute()
 
         pedidos_formateados = []
-        for p in respuesta.data:
-            fecha_corta = p["fecha_hora_pedido"].split("T")[0] 
+        for p in (respuesta.data or []):
+            fecha_raw = str(p.get("fecha_hora_pedido") or "")
+            fecha_corta = fecha_raw.split("T")[0] if "T" in fecha_raw else fecha_raw[:10]
+            detalles = p.get("detalle_pedido") or []
+            total_unidades = sum(int(d.get("cantidad") or 0) for d in detalles) or 1
+
             pedidos_formateados.append({
                 "id": p["id"],
                 "fecha": fecha_corta,
                 "total": p["total"],
-                "estado": p["estado"].capitalize(),
-                "cantidad_productos": 1 
+                "estado": (p.get("estado") or "pendiente").capitalize(),
+                "cantidad_productos": total_unidades
             })
-            
+
         return pedidos_formateados
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener pedidos: {str(e)}")
 
+
 @router.get("/historial-pedidos")
 def obtener_historial_completo(usuario_id: str = Depends(obtener_usuario_actual)):
     try:
-        respuesta = supabase.table("pedidos") \
-            .select("id, total, estado, fecha_hora_pedido") \
+        respuesta = supabase_admin.table("pedidos") \
+            .select("id, total, estado, fecha_hora_pedido, detalle_pedido(cantidad)") \
             .eq("id_cliente", usuario_id) \
             .order("fecha_hora_pedido", desc=True) \
             .execute()
-            
+
         pedidos_formateados = []
-        for p in respuesta.data:
-            fecha_corta = p["fecha_hora_pedido"].split("T")[0] 
+        for p in (respuesta.data or []):
+            fecha_raw = str(p.get("fecha_hora_pedido") or "")
+            fecha_corta = fecha_raw.split("T")[0] if "T" in fecha_raw else fecha_raw[:10]
+            detalles = p.get("detalle_pedido") or []
+            total_unidades = sum(int(d.get("cantidad") or 0) for d in detalles) or 1
+
             pedidos_formateados.append({
                 "id": p["id"],
                 "fecha": fecha_corta,
                 "total": p["total"],
-                "estado": p["estado"].capitalize(),
-                "cantidad_productos": 1
+                "estado": (p.get("estado") or "pendiente").capitalize(),
+                "cantidad_productos": total_unidades
             })
+
         return pedidos_formateados
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener el historial completo: {str(e)}")
