@@ -206,7 +206,6 @@ def procesar_nueva_orden(datos: CrearPedidoRequest, token: str = None, user_id: 
     except Exception as e:
         print(f"[ERROR NOTIFICACIÓN PEDIDO] {e}")
 
-    # Combinar datos del checkout con el perfil completo en public.usuarios (para garantizar DNI y dirección)
     cliente_dict = datos.cliente.model_dump()
     perfil_db = supabase_admin.table("usuarios").select(
         "nombres, apellidos, correo, telefono, tipo_documento, numero_documento, direccion"
@@ -217,7 +216,6 @@ def procesar_nueva_orden(datos: CrearPedidoRequest, token: str = None, user_id: 
             if not cliente_dict.get(campo) and valor:
                 cliente_dict[campo] = valor
 
-    # Respaldo adicional si el documento vino en receptor o factura
     if not cliente_dict.get("numero_documento"):
         if datos.envio.receptor_documento_num:
             cliente_dict["numero_documento"] = datos.envio.receptor_documento_num
