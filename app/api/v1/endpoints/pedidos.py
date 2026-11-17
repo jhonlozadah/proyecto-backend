@@ -15,7 +15,6 @@ class SolicitudReembolsoRequest(BaseModel):
     motivo_detalle: str = Field(..., min_length=10, max_length=1000)
     acepto_terminos: bool
 
-
 @router.post("/crear-preferencia")
 def crear_preferencia_endpoint(
     datos: CrearPedidoRequest,
@@ -34,7 +33,6 @@ def crear_preferencia_endpoint(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @router.get("/pedidos/{pedido_id}")
 def obtener_detalle_pedido(
     pedido_id: str,
@@ -52,7 +50,6 @@ def obtener_detalle_pedido(
 
     pedido = res_pedido.data
 
-    # Seguridad: Verificar estrictamente que el pedido pertenezca al usuario autenticado
     if str(pedido.get("id_cliente")) != str(usuario_id):
         raise HTTPException(status_code=403, detail="No tienes permiso para acceder a este pedido")
 
@@ -73,7 +70,6 @@ def obtener_detalle_pedido(
     detalles = res_detalles.data or []
     subtotal_productos = sum(float(item["subtotal"]) for item in detalles)
 
-    # Consultar si existe solicitud de cancelación / reembolso para este pedido
     res_solicitud = supabase_admin.table("solicitudes_reembolso")\
         .select("id, tipo_solicitud, motivo_categoria, motivo_detalle, estado, fecha_solicitud, respuesta_admin, archivos_adjuntos, fecha_respuesta")\
         .eq("id_pedido", pedido_id)\
@@ -90,7 +86,6 @@ def obtener_detalle_pedido(
         "solicitud_reembolso": solicitud
     }
 
-
 @router.post("/pedidos/{pedido_id}/solicitud-reembolso")
 async def crear_solicitud_reembolso(
     pedido_id: str,
@@ -104,7 +99,6 @@ async def crear_solicitud_reembolso(
             detail="Debes marcar la casilla de confirmación indicando que comprendes que esta acción es irreversible."
         )
 
-    # 1. Verificar existencia y propiedad del pedido
     res_pedido = supabase_admin.table("pedidos")\
         .select("id, id_cliente, estado, total, usuarios(nombres, apellidos)")\
         .eq("id", pedido_id)\
@@ -118,7 +112,6 @@ async def crear_solicitud_reembolso(
     if str(pedido.get("id_cliente")) != str(usuario_id):
         raise HTTPException(status_code=403, detail="No tienes permiso para operar sobre este pedido.")
 
-    # 2. Validar que el estado del pedido permita solicitar cancelación/reembolso
     estado_actual = (pedido.get("estado") or "").lower()
     if estado_actual in ["cancelado", "reembolsado"]:
         raise HTTPException(
@@ -126,7 +119,6 @@ async def crear_solicitud_reembolso(
             detail=f"Este pedido ya se encuentra en estado '{estado_actual}' y no admite nuevas solicitudes."
         )
 
-    # 3. Verificar que no exista ya una solicitud previa
     existe = supabase_admin.table("solicitudes_reembolso")\
         .select("id")\
         .eq("id_pedido", pedido_id)\
@@ -138,7 +130,6 @@ async def crear_solicitud_reembolso(
             detail="Ya existe una solicitud registrada para este pedido. No es posible enviar otra."
         )
 
-    # 4. Registrar la solicitud
     nueva_solicitud = {
         "id_pedido": pedido_id,
         "id_cliente": usuario_id,
@@ -153,7 +144,6 @@ async def crear_solicitud_reembolso(
     if not res_insert.data:
         raise HTTPException(status_code=500, detail="No se pudo registrar la solicitud.")
 
-    # 5. Notificar a los administradores y limpiar caché de Redis
     try:
         u = pedido.get("usuarios") or {}
         nombre_cliente = f"{u.get('nombres', '')} {u.get('apellidos', '')}".strip() or "Un cliente"
