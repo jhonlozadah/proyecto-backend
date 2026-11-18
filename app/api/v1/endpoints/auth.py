@@ -337,7 +337,7 @@ def cambiar_password_recuperacion(datos: RecuperarCambiarRequest):
         )
 
 BACKEND_URL = os.getenv("BACKEND_URL", "https://proyecto-backend-42cf.onrender.com").rstrip("/")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://zingy-cassata-3e8cab.netlify.app").rstrip("/")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://edificando.vercel.app/").rstrip("/")
 
 @router.get("/google")
 def login_con_google():

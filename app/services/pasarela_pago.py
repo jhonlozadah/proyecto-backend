@@ -18,7 +18,7 @@ def crear_preferencia_mp(
 
     frontend_url = os.getenv(
         "FRONTEND_URL",
-        "https://zingy-cassata-3e8cab.netlify.app"
+        "https://edificando.vercel.app/"
     ).strip().rstrip("/")
 
     URL_EDGE_FUNCTION = "https://gzcbcnkodzadxkkpsyrr.supabase.co/functions/v1/dynamic-handler"
@@ -44,7 +44,6 @@ def crear_preferencia_mp(
             "unit_price": round(float(item.get("precio_unitario") or item.get("unit_price") or 0), 2)
         })
 
-    # 2. Construir payer usando public.usuarios + respaldo de public.pedidos
     payer_data = {
         "name": (cliente.get("nombres") or "Cliente").strip(),
         "surname": (cliente.get("apellidos") or "Edificando").strip(),
@@ -59,7 +58,6 @@ def crear_preferencia_mp(
             "number": telefono[-9:]
         }
 
-    # Prioridad: usuarios.numero_documento -> pedidos.receptor_documento_num -> pedidos.ruc_factura
     num_doc = str(
         cliente.get("numero_documento")
         or pedido_info.get("receptor_documento_num")
