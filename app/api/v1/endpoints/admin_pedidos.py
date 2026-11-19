@@ -406,7 +406,6 @@ async def responder_solicitud_reembolso(
                 "tipo": archivo.content_type
             })
 
-        # 3. Guardar respuesta definitiva (bloquea futuras respuestas)
         ahora = datetime.now(timezone.utc).isoformat()
         res_update = (
             supabase_admin.table("solicitudes_reembolso")
@@ -418,11 +417,10 @@ async def responder_solicitud_reembolso(
                 "fecha_respuesta": ahora
             })
             .eq("id", solicitud["id"])
-            .eq("estado", "pendiente")  # Doble candado atómico
+            .eq("estado", "pendiente")
             .execute()
         )
 
-        # 4. Crear notificación interna para el cliente
         try:
             pedido_corto = pedido_id.split("-")[0].upper()
             supabase_admin.table("notificaciones").insert({
