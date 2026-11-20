@@ -74,7 +74,6 @@ def obtener_conteo_pedidos_procesando(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/pedidos/{pedido_id}")
 async def obtener_detalle_pedido_admin(
     pedido_id: str,
@@ -127,7 +126,6 @@ async def obtener_detalle_pedido_admin(
             .execute()
         )
 
-        # Obtener solicitud de cancelación / reembolso si existe
         res_solicitud = (
             supabase_admin.table("solicitudes_reembolso")
             .select("*")
@@ -151,7 +149,6 @@ async def obtener_detalle_pedido_admin(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.patch("/pedidos/{pedido_id}/estado")
 async def actualizar_estado_pedido(
     pedido_id: str,
@@ -161,7 +158,6 @@ async def actualizar_estado_pedido(
     redis_client: Redis = Depends(get_redis)
 ):
     try:
-        # 1. Validación de seguridad: verificar estado actual antes de editar
         res_actual = (
             supabase_admin.table("pedidos")
             .select("estado")
@@ -253,7 +249,6 @@ async def actualizar_estado_pedido(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @router.post("/pedidos/{pedido_id}/comprobante")
 async def subir_comprobante_pedido(
     pedido_id: str,
@@ -323,12 +318,11 @@ async def subir_comprobante_pedido(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al subir comprobante: {str(e)}")
 
-
 @router.post("/pedidos/{pedido_id}/responder-solicitud")
 async def responder_solicitud_reembolso(
     pedido_id: str,
     respuesta_admin: str = Form(...),
-    estado_resolucion: str = Form("aprobada"),  # 'aprobada' o 'rechazada'
+    estado_resolucion: str = Form("aprobada"), 
     archivos: Optional[List[UploadFile]] = File(None),
     usuario_id: str = Depends(verificar_permiso("pedidos_access")),
     redis_client: Redis = Depends(get_redis)
@@ -341,7 +335,6 @@ async def responder_solicitud_reembolso(
         if estado_resolucion not in ["aprobada", "rechazada"]:
             raise HTTPException(status_code=400, detail="Estado de resolución inválido.")
 
-        # 1. Buscar la solicitud y verificar que no haya sido respondida ya
         res_sol = (
             supabase_admin.table("solicitudes_reembolso")
             .select("*")
@@ -360,7 +353,6 @@ async def responder_solicitud_reembolso(
                 detail="Esta solicitud ya fue respondida anteriormente y no puede volver a modificarse."
             )
 
-        # 2. Validar y subir hasta un máximo de 3 archivos opcionales
         archivos_validos = [a for a in (archivos or []) if a and a.filename]
         if len(archivos_validos) > 3:
             raise HTTPException(status_code=400, detail="Solo puedes subir un máximo de 3 archivos adjuntos.")
