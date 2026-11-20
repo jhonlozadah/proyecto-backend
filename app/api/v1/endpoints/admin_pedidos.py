@@ -29,8 +29,7 @@ def obtener_nombre_usuario(user_id: str) -> str:
     except Exception as e:
         print(f"[DEBUG PEDIDOS] No se pudo obtener el nombre del usuario: {e}")
     return "Un administrador"
-
-
+ 
 @router.get("/pedidos")
 async def listar_pedidos_admin(
     usuario_id: str = Depends(verificar_permiso("pedidos_access")),
@@ -56,7 +55,6 @@ async def listar_pedidos_admin(
         return res.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.get("/pedidos/conteo-procesando")
 def obtener_conteo_pedidos_procesando(
