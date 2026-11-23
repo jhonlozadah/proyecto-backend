@@ -4,7 +4,7 @@ from fastapi import HTTPException, status, Depends, Cookie, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.security import decode_jwt_payload
 from redis.asyncio import Redis
-from app.core.database import supabase, supabase_admin, get_redis
+from app.core.database import supabase_admin, get_redis, crear_cliente_auth
 
 security = HTTPBearer(auto_error=False)
 
@@ -30,7 +30,8 @@ async def obtener_usuario_actual(
             detail="La sesión ha sido cerrada previamente."
         )
     try:
-        user_response = supabase.auth.get_user(token)
+        auth_client = crear_cliente_auth()
+        user_response = auth_client.auth.get_user(token)
         if not user_response or not user_response.user:
             raise ValueError("Token inválido")
         user_id = user_response.user.id

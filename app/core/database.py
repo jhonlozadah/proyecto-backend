@@ -21,6 +21,11 @@ supabase.postgrest.session = _crear_http_client()
 supabase_admin: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
 supabase_admin.postgrest.session = _crear_http_client()
 
+def crear_cliente_auth() -> Client:
+    cliente = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+    cliente.postgrest.session = _crear_http_client()
+    return cliente
+
 redis_pool = None
 
 async def get_redis() -> aioredis.Redis:

@@ -11,7 +11,7 @@ from app.api.dependencies import obtener_usuario_actual
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.schemas.auth_schema import RecuperarEnviarRequest, RecuperarVerificarRequest, RecuperarCambiarRequest, RegisterRequest, LoginRequest, LoginResponse, ValidarMFARequest
 from app.services.email_brevo import enviar_correo_recuperacion
-from app.core.database import supabase, supabase_admin, get_redis
+from app.core.database import supabase, supabase_admin, get_redis, crear_cliente_auth
 from redis.asyncio import Redis
 from datetime import datetime, timedelta
 from fastapi.responses import RedirectResponse, JSONResponse
@@ -53,6 +53,7 @@ def login(credentials: LoginRequest, response: Response, request: Request):
             detail=f"Demasiados intentos. Inténtalo de nuevo en {segundos_restantes} segundos."
         )
     try:
+        auth_client = crear_cliente_auth()
         auth_response = supabase.auth.sign_in_with_password({
             "email": credentials.correo,
             "password": credentials.contrasena
@@ -175,12 +176,13 @@ def register(user_data: RegisterRequest, response: Response):
     rol_fijo = "cliente"
 
     try:
-        rol_response = supabase.table("roles").select("id").ilike("nombre", rol_fijo).execute()
+        rol_response = supabase_admin.table("roles").select("id").ilike("nombre", rol_fijo).execute()
         if not rol_response.data:
             raise HTTPException(status_code=500, detail="Error interno: Rol base no encontrado.")
             
         rol_id = rol_response.data[0]["id"]
-        auth_response = supabase.auth.sign_up({
+        auth_client = crear_cliente_auth()
+        auth_response = auth_client.auth.sign_up({
             "email": user_data.correo,
             "password": user_data.contrasena
         })
@@ -199,7 +201,7 @@ def register(user_data: RegisterRequest, response: Response):
             "mfa_activo": False
         }
 
-        supabase.table("usuarios").insert(nuevo_usuario).execute()
+        supabase_admin.table("usuarios").insert(nuevo_usuario).execute()
 
         try:
             notificar_administradores(
@@ -342,7 +344,8 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "https://edificando.vercel.app/").rstri
 @router.get("/google")
 def login_con_google():
     try:
-        res = supabase.auth.sign_in_with_oauth({
+        auth_client = crear_cliente_auth()
+        res = auth_client.auth.sign_in_with_oauth({
             "provider": "google",
             "options": {
                 "redirect_to": f"{BACKEND_URL}/api/v1/auth/callback"
@@ -355,21 +358,22 @@ def login_con_google():
 @router.get("/callback")
 def google_callback(code: str):
     try:
-        res = supabase.auth.exchange_code_for_session({"auth_code": code})
+        auth_client = crear_cliente_auth()
+        res = auth_client.auth.exchange_code_for_session({"auth_code": code})
         token = res.session.access_token
         user = res.user
-        usuario_db = supabase.table("usuarios").select("id, mfa_activo").eq("id", user.id).execute()
+        usuario_db = supabase_admin.table("usuarios").select("id, mfa_activo").eq("id", user.id).execute()
         mfa_requerido = False
         
         if not usuario_db.data:
             nombres_google = user.user_metadata.get("full_name", "Usuario")
             rol_fijo = "cliente"
-            rol_response = supabase.table("roles").select("id").ilike("nombre", rol_fijo).execute()
+            rol_response = supabase_admin.table("roles").select("id").ilike("nombre", rol_fijo).execute()
             if not rol_response.data:
                 raise HTTPException(status_code=500, detail="Error interno: Rol base no encontrado.")
                 
             rol_id = rol_response.data[0]["id"]
-            supabase.table("usuarios").insert({
+            supabase_admin.table("usuarios").insert({
                 "id": user.id,
                 "id_rol": rol_id,
                 "nombres": nombres_google,

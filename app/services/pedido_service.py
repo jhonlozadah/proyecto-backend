@@ -1,4 +1,4 @@
-from app.core.database import supabase, supabase_admin
+from app.core.database import supabase_admin, crear_cliente_auth
 from app.schemas.pedido_schema import CrearPedidoRequest
 from app.services.pasarela_pago import crear_preferencia_mp
 from app.services.notificaciones_service import notificar_administradores
@@ -14,7 +14,8 @@ def get_password_hash(password: str) -> str:
 def procesar_nueva_orden(datos: CrearPedidoRequest, token: str = None, user_id: str = None):
     if not user_id and token:
         try:
-            user_response = supabase.auth.get_user(token)
+            auth_client = crear_cliente_auth()
+            user_response = auth_client.auth.get_user(token)
             if user_response and user_response.user:
                 user_id = user_response.user.id
         except Exception:

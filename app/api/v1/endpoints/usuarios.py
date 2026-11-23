@@ -3,7 +3,7 @@ import traceback
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Cookie, Response
 from pydantic import BaseModel, EmailStr
 from app.schemas.usuario_schema import UsuarioPerfilResponse, UsuarioUpdate, UsuarioPasswordUpdate, CrearUsuarioAdminRequest, UsuarioAdminResponse
-from app.core.database import supabase, supabase_admin, get_redis
+from app.core.database import supabase, supabase_admin, get_redis, crear_cliente_auth
 from app.api.dependencies import obtener_usuario_actual, verificar_permiso, rate_limiter
 from app.services.cloud_storage import subir_imagen
 from app.core.config import settings
@@ -128,19 +128,20 @@ async def actualizar_foto(
 
 @router.put("/password", dependencies=[Depends(rate_limiter(max_requests=3, window_seconds=60))])
 def actualizar_password(datos: UsuarioPasswordUpdate, usuario_id: str = Depends(obtener_usuario_actual)):
-    usuario_db = supabase.table("usuarios").select("correo").eq("id", usuario_id).single().execute()
+    usuario_db = supabase_admin.table("usuarios").select("correo").eq("id", usuario_id).single().execute()
     if not usuario_db.data:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
 
     correo = usuario_db.data["correo"]
 
     try:
-        supabase.auth.sign_in_with_password({
+        auth_client = crear_cliente_auth()
+        auth_client.auth.sign_in_with_password({
             "email": correo,
             "password": datos.contrasena_actual
         })
 
-        supabase.auth.update_user({"password": datos.nueva_contrasena})
+        auth_client.auth.update_user({"password": datos.nueva_contrasena})
         return {"mensaje": "Contraseña actualizada correctamente"}
 
     except Exception as e:
@@ -148,7 +149,7 @@ def actualizar_password(datos: UsuarioPasswordUpdate, usuario_id: str = Depends(
             status_code=400, 
             detail="La contraseña actual es incorrecta o hubo un error al actualizar."
         )
-
+    
 @router.post("/mfa/generar", dependencies=[Depends(rate_limiter(max_requests=3, window_seconds=60))])
 def generar_mfa(
     usuario_id: str = Depends(obtener_usuario_actual),
@@ -513,13 +514,14 @@ async def crear_usuario_por_admin(
     redis_client: Redis = Depends(get_redis)
 ):
     try:
-        admin_db = supabase.table("usuarios").select("correo").eq("id", admin_id).single().execute()
+        admin_db = supabase_admin.table("usuarios").select("correo").eq("id", admin_id).single().execute()
         if not admin_db.data:
             raise HTTPException(status_code=404, detail="Administrador no encontrado.")
         
         admin_email = admin_db.data["correo"]
         try:
-            auth_check = supabase.auth.sign_in_with_password({
+            auth_client = crear_cliente_auth()
+            auth_check = auth_client.auth.sign_in_with_password({
                 "email": admin_email,
                 "password": datos.confirmacion_contrasena_admin
             })
@@ -533,13 +535,13 @@ async def crear_usuario_por_admin(
             )
 
         nombre_rol_buscar = datos.rol.strip().lower()
-        rol_res = supabase.table("roles").select("id").ilike("nombre", nombre_rol_buscar).execute()
+        rol_res = supabase_admin.table("roles").select("id").ilike("nombre", nombre_rol_buscar).execute()
         if not rol_res.data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, 
                 detail=f"El rol '{datos.rol}' no existe en el sistema."
             )
-
+        
         id_rol = rol_res.data[0]["id"]
         try:
             nuevo_auth = supabase_admin.auth.admin.create_user({
