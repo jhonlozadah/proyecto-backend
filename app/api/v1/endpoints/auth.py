@@ -18,6 +18,7 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi import Request
 from app.services.notificaciones_service import notificar_administradores
 
+
 router = APIRouter()
 security = HTTPBearer()
 intentos_login = {}
@@ -339,10 +340,10 @@ def cambiar_password_recuperacion(datos: RecuperarCambiarRequest):
         )
 
 BACKEND_URL = os.getenv("BACKEND_URL", "https://proyecto-backend-42cf.onrender.com").rstrip("/")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://edificando.vercel.app/").rstrip("/")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://edificando.vercel.app").rstrip("/")
 
 @router.get("/google")
-def login_con_google():
+def login_con_google(response: Response):
     try:
         auth_client = crear_cliente_auth()
         res = auth_client.auth.sign_in_with_oauth({
@@ -351,27 +352,56 @@ def login_con_google():
                 "redirect_to": f"{BACKEND_URL}/api/v1/auth/callback"
             }
         })
+
+        # Extraer el code_verifier generado por esta instancia de Supabase
+        storage_key = f"{auth_client.auth._storage_key}-code-verifier"
+        code_verifier = auth_client.auth._storage.get_item(storage_key)
+
+        if code_verifier:
+            response.set_cookie(
+                key="sb_code_verifier",
+                value=code_verifier,
+                httponly=True,
+                secure=True,
+                samesite="none",
+                path="/",
+                max_age=300
+            )
+
         return {"url": res.url}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error iniciando OAuth: {str(e)}")
 
+
 @router.get("/callback")
-def google_callback(code: str):
+def google_callback(request: Request, code: str = None, error: str = None):
+    if error or not code:
+        return RedirectResponse(url=f"{FRONTEND_URL}/main/iniciar-sesion.html?error=google_cancelado", status_code=302)
+
+    code_verifier = request.cookies.get("sb_code_verifier")
+    if not code_verifier:
+        print("[ERROR CALLBACK]: Cookie sb_code_verifier no encontrada")
+        return RedirectResponse(url=f"{FRONTEND_URL}/main/iniciar-sesion.html?error=sesion_expirada", status_code=302)
+
     try:
         auth_client = crear_cliente_auth()
-        res = auth_client.auth.exchange_code_for_session({"auth_code": code})
+        res = auth_client.auth.exchange_code_for_session({
+            "auth_code": code,
+            "code_verifier": code_verifier
+        })
+
         token = res.session.access_token
         user = res.user
         usuario_db = supabase_admin.table("usuarios").select("id, mfa_activo").eq("id", user.id).execute()
         mfa_requerido = False
-        
+
         if not usuario_db.data:
-            nombres_google = user.user_metadata.get("full_name", "Usuario")
+            nombres_google = (user.user_metadata.get("full_name") or "Usuario").strip()[:50]
             rol_fijo = "cliente"
             rol_response = supabase_admin.table("roles").select("id").ilike("nombre", rol_fijo).execute()
             if not rol_response.data:
                 raise HTTPException(status_code=500, detail="Error interno: Rol base no encontrado.")
-                
+
             rol_id = rol_response.data[0]["id"]
             supabase_admin.table("usuarios").insert({
                 "id": user.id,
@@ -393,11 +423,12 @@ def google_callback(code: str):
                 print(f"[ERROR NOTIFICACIÓN] No se pudo alertar el registro por Google: {e}")
         else:
             mfa_requerido = usuario_db.data[0].get("mfa_activo", False)
-            
+
         pagina_destino = "main/verificacion.html" if mfa_requerido else "main/perfil-de-usuario.html"
         url_frontend = f"{FRONTEND_URL}/{pagina_destino}?token={token}"
-        
+
         respuesta = RedirectResponse(url=url_frontend, status_code=302)
+        respuesta.delete_cookie(key="sb_code_verifier", path="/", samesite="none", secure=True)
         respuesta.set_cookie(
             key="access_token",
             value=token,
@@ -408,7 +439,7 @@ def google_callback(code: str):
             max_age=3600
         )
         return respuesta
-        
+
     except Exception as e:
         print(f"[ERROR CALLBACK]: {str(e)}")
         raise HTTPException(status_code=400, detail="Error en Auth Google")
