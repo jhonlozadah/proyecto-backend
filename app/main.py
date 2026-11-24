@@ -2,7 +2,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
-import redis.asyncio as aioredis
 from app.api.v1.router import api_router
 from app.services.pedido_service import limpiar_pedidos_abandonados
 from app.core.config import settings
@@ -10,11 +9,7 @@ import app.core.database as db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    db.redis_pool = aioredis.ConnectionPool.from_url(
-        settings.REDIS_URL, 
-        decode_responses=True,
-        max_connections=10 
-    )
+    db.init_redis_pool(settings.REDIS_URL)
     print("[SISTEMA] Pool de Redis inicializado correctamente.")
 
     scheduler = BackgroundScheduler()
@@ -42,7 +37,6 @@ origenes_permitidos = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origenes_permitidos,
-    #Lurgo borrar la siguiente linea
     allow_origin_regex=r"https://.*\.(vercel|netlify)\.app",    
     allow_credentials=True,
     allow_methods=["*"],
